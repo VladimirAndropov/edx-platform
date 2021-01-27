@@ -23,16 +23,7 @@ from social_core.exceptions import AuthFailed, AuthCanceled, \
 
 from users import add_scos_user
 
-"""
-examples:
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'grant_type=password&client_id=onlineacademy&client_secret=5a04d64a-246d-4468-8929-57f439aa6fa9&username=vvandropov@fa.ru&password=Ptvkzghjof22!' "https://auth.online.edu.ru/realms/portfolio/protocol/openid-connect/token"
 
-curl -d access_token=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhRGlwanZQUFV0TDEwXy11M3Y3dlhvb0dKdzBYSDJ3bk9GZDJDWjNXVEJNIn0.eyJqdGkiOiI5NGYyMTcwOC00ZWIyLTQ3NGEtYjU0YS04MTcyZDViZWRhY2UiLCJleHAiOjE2MDQwOTIyNjUsIm5iZiI6MCwiaWF0IjoxNjA0MDkxOTY1LCJpc3MiOiJodHRwczovL2F1dGgub25saW5lLmVkdS5ydS9yZWFsbXMvcG9ydGZvbGlvIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImZhZThmZmMwLWMwMzktNDUyNi1hNzE3LTk2ZjBmN2NlYTE3MiIsInR5cCI6IkJlYXJlciIsImF6cCI6Im9ubGluZWFjYWRlbXkiLCJhdXRoX3RpbWUiOjAsInNlc3Npb25fc3RhdGUiOiI1ZGFlNDZiMC0zNTVlLTQ2ZmMtYjI0Zi03OTQzMmNjMDgxYzMiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbImh0dHBzOi8vb25saW5lLmZhLnJ1Il0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJWbGFkaW1pciBBbmRyb3BvdiIsInByZWZlcnJlZF91c2VybmFtZSI6InZ2YW5kcm9wb3ZAZmEucnUiLCJtaWRkbGVfbmFtZSI6IiIsImdpdmVuX25hbWUiOiJWbGFkaW1pciIsImZhbWlseV9uYW1lIjoiQW5kcm9wb3YiLCJlbWFpbCI6InZ2YW5kcm9wb3ZAZmEucnUifQ.DEyD0Q6LCA4a8B3VTwtTa7u3LjkdcjMCyHwxqlA2i1c15FA3OMqehYOYRY4LRKrNCB_R026CDBSNs__8mepSSjELEt1Hq6WoQBemWmhzNoXigh1R17DyGMVU3MxRD4rZhneyUv7XA2CJGriKRKDN24g5chhdP5cqCcUdeRCoHOVH0jZnTJdqrCioDZfg8rUKwmqY1L_ajJirzxUPRIqPE47R0ci62THr1yuTmIJ59q5Mv62-QWXt7GXGPLK7AiJlNJu-_NAfqUjAL32vbxFAHhQqfFivSwoVws8SrRacO8je3H2mXyUiTRRkEe3CQie-WBQyMqMqFYBWQjkcQx_Zng "https://auth.online.edu.ru/realms/portfolio/protocol/openid-connect/userinfo"
-
-curl "https://auth.online.edu.ru/realms/portfolio/protocol/openid-connect/certs"
-
-python /edx/app/edxapp/edx-platform/openedx/features/scos/do.py testplt status interfinance onlineacademy
-"""
 
 
 SSO_BASE_URL = 'https://auth.online.edu.ru/realms/portfolio'
@@ -46,8 +37,8 @@ SSO_LOGOUT_URL = SSO_OIDC_URL + 'logout'
 class ScosOAuth2(OAuthAuth):
     """SCOS OAuth2 authentication implementation"""
     name = 'scos'
-    CLIENT_ID = 'onlineacademy'
-    CLIENT_SECRET_KEY = '5a04d64a-246d-4468-8929-57f439aa6fa9'
+    CLIENT_ID = ENV('API_USER_ID') 
+    CLIENT_SECRET_KEY = ENV('API_PASSWORD') 
     REFRESH_TOKEN_URL = None
     REFRESH_TOKEN_METHOD = 'POST'
     RESPONSE_TYPE = 'code'
