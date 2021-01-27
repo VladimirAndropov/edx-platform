@@ -30,6 +30,10 @@ else:
     status_css_class = 'course-status-processing'
 %>
 
+  <p class="message-copy">${cert_status['status']}
+  </p>
+   
+
 % if cert_status['status'] != 'processing':
   % if cert_status['status'] == 'certificate_earned_but_not_available':
     <div class="message message-status ${status_css_class} is-shown">

@@ -9,6 +9,8 @@
 requirements/private.txt
 lms/envs/private.py
 cms/envs/private.py
+lms/envs/
+cms/envs/
 # end-noclean
 
 ### Python artifacts
@@ -139,3 +141,7 @@ dist
 
 # Visual Studio Code
 .vscode
+
+#scos
+openedx/features/scos/keys/
+openedx/features/scos/conf.py

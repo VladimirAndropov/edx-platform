@@ -166,6 +166,7 @@ urlpatterns = [
     url(r'^api/val/v0/', include('edxval.urls')),
     url(r'^api/tasks/v0/', include('user_tasks.urls')),
     url(r'^accessibility$', contentstore.views.accessibility, name='accessibility'),
+    url(r'^export_scos/{}$'.format(COURSELIKE_KEY_PATTERN), contentstore.views.export_scos, name='export_scos'),
 ]
 
 JS_INFO_DICT = {

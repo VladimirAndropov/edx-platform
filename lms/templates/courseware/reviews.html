@@ -1,0 +1,217 @@
+
+<%
+import csv
+import os
+import re
+import numpy
+import math
+from datetime import datetime
+
+# establish variables/global dicts
+filestore = "/edx/app/edxapp/edx-platform/lms/templates/reviews.csv"
+star_null = "<span class='fa fa-star-o' aria-hidden='true' style='color:rgb(210,210,210);'></span>"
+star_empty = "<span class='fa fa-star-o' aria-hidden='true'></span>"
+star_full = "<span class='fa fa-star' aria-hidden='true'></span>"
+star_half_empty = "<span class='fa fa-star-half-empty' aria-hidden='true'></span>"
+exceptions = ("\\n","<br/>"),("&lt;strong&gt;","<strong>"),("&lt;/strong&gt;","</strong>"),("&lt;u&gt;", "<u>"),("&lt;/u&gt;", "</u>"),("&lt;i&gt;", "<i>"),("&lt;/i&gt;", "</i>")
+nope = ["onclick","onmouseover","onmouseout","onchange","onload","onkeydown","<script>", "<style>","window.","$(document)","edxapp","<%","DELETE FROM","SELECT","DROP TABLE","0 or 1=1","0 or 1 = 1"]
+restrictions = map(str.lower, nope)
+course_reviews = []
+review_counts = {}
+review_notnull = {}
+
+# filter for excessive newline(s)
+def newline_filter(dict):
+    for k in dict.keys():
+        dict[k][1].replace("\\n\\n","\\n")
+        if len(dict[k][1].split("\\n")) > 10:
+             dict[k][1] = dict[k][1].replace("\\n", " ")
+        else:
+            continue
+
+# secondary escaping filter (use exceptions list)
+def basic_formats(text):
+    string = reduce(lambda a, kv: a.replace(*kv), exceptions, text)
+    return string
+
+
+# read reviews file & populate course-specific review lists
+with open(filestore) as csv_file:
+    readCSV = csv.reader(csv_file, delimiter='\t')
+    try:
+        c = 1
+        for row in readCSV:
+            if not (row):
+                continue
+            elif row[0] != course.display_number_with_default:
+                continue
+            elif any(substring in row[4].lower() for substring in restrictions):
+                continue
+            elif row[0] == course.display_number_with_default:
+                if row[3] != "null" :
+                  rating = int(row[3])
+                  course_reviews.append(rating)
+                else:
+                  rating = 0
+                if row[4] == "null":
+                    continue
+                else:
+                    review_notnull[row[1]] = [rating, row[4]]
+            else:
+                break
+    except:
+       pass
+
+# calculate average course rating
+if course_reviews:
+    course_reviews = [value for value in course_reviews if value != 0]
+    review_aggregate = numpy.mean(course_reviews)
+    review_aggregate = round(review_aggregate * 2.0) / 2.0
+    if str(review_aggregate).endswith('.0'):
+        review_aggregate = int(review_aggregate)
+    dec, whole = math.modf(review_aggregate)
+    diff = int(5 - (whole+round(dec)))
+    reviews = len(course_reviews)
+    for r in course_reviews:
+        if r in review_counts.keys():
+            review_counts[r] += 1
+        else:
+            review_counts[r] = 1
+
+%>
+
+% if course_reviews:
+  <script src="https://cdn.bootcss.com/simplePagination.js/1.6/jquery.simplePagination.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.hoverintent/1.10.0/jquery.hoverIntent.js"></script>
+    
+  <script>
+    $(document).ready(function() {
+      % if reviews > 1:
+        $(".aggregate-header").addClass("interactive");
+      % endif
+      $(".aggregate-header.interactive").hoverIntent(function() {
+          $("#pop-up").slideDown('fast');
+          $(".reviews *").css("filter","blur(0.25px)");
+      }, function() {
+          $("#pop-up").slideUp('fast');
+          $(".reviews *").css("filter","none");
+      });
+    });
+  </script>
+  <div class="course-reviews">
+    <h2 class="review-header">Рейтинг курса:</h2>
+    <div class="aggregate">
+      <div class="aggregate-header">
+        <h4>
+        % for i in range(0, int(whole)):
+          ${star_full}
+        % endfor
+        % if dec:
+          ${star_half_empty}
+        % endif
+        % if diff and whole < 5:
+          % for i in range(0, diff):
+            ${star_empty}
+          % endfor
+        % endif
+        </h4>
+        <%
+        star_string = "звёзд" if review_aggregate > 1 else "звезда"
+        review_string = "оценкам" if reviews > 1 else "оценке"
+        %>
+        <h3 class="aggregate-text">${review_aggregate} ${star_string} в среднем по ${reviews} ${review_string}</h3>
+      </div>
+      % if len(review_counts.keys()) > 1:
+      <div id="pop-up" class="breakdown-popup" style="display:none;">
+      % for n in range(5, 0, -1):
+        % if n not in review_counts.keys():
+          <div class="breakdown-row">
+            <%
+            spacer = "&nbsp;"*11 if len(review_counts.keys()) == 1 else "&nbsp;"*9
+            %>
+            <div class="row-label"><h4>${n} star ${spacer}</h4></div>
+            <div class="bar-wrapper">
+              <p class="bar empty" style="width:100%"><span class="invisible">0</span></p>
+            </div>
+          </div>
+          <div class="break"></div>
+        % else:
+          <% rating_share = int((float(review_counts[n])/float(reviews))*100) %>
+          <div class="breakdown-row">
+            <div class="row-label"><h4>${n} star: <span style="color:green;">${rating_share}%</span></h4></div>
+            <div class="bar-wrapper">
+              <p class="bar" style="width:${rating_share}%"><span class="populated">${review_counts[n]}</span></p>
+            </div>
+          </div>
+        % endif
+      % endfor
+      </div>
+      % endif
+    </div>
+    % if review_notnull:
+      <% newline_filter(review_notnull) %>
+    <div class="reviews" id="reviews">
+      <h2>Оценки:</h2>
+      % for i in sorted(review_notnull, key=lambda x: datetime.strptime(x, '%m/%d/%Y %H:%M'), reverse=True):
+        <% rate = int(review_notnull[i][0]) %>
+        <div class="review">
+          % if rate == 0:
+            ${star_null*5}
+          % elif rate < 5:
+            ${star_full*rate}${star_empty*(5-rate)}
+          % else:
+            ${star_full*rate}
+          % endif
+            <span class="review-date">${i[:10]}</span>
+            % if review_notnull[i][1]:
+              <h4 class="review-text">${ review_notnull[i][1] | x, basic_formats }</h4>
+            % endif
+        </div>
+      % endfor
+      <ul id="pages"></ul>
+    </div>
+    % endif
+  </div>
+  <script>
+      var per = 4;
+      function divHeight(perPage) {
+          var maxHeight = 0;
+          $(".review").slice(0, (perPage+1)).each(function() {
+              maxHeight += $(this).height();
+          });
+          $(".reviews").css("min-height", ( maxHeight + ( (perPage*16) - 6 ) ) + 40 );
+          $(".review:nth-child("+(perPage+1)+"n)").css("border-bottom","none").css("padding-bottom","0");
+      }
+      $(document).ready(function() {
+          var length = $(".review").length;
+          var pages = Math.ceil(length / per);
+          var cur_page = 0;
+          $(".review").slice(per).hide();
+          function pageAction(num) {
+              var start = per * (num - 1);
+              var end = start + per;
+              $(".review").hide()
+                          .slice(start, end).fadeIn();
+              $(".page-number").removeClass("active");
+              $("#"+num).addClass("active");
+              cur_page = num;          
+              if ( cur_page == 1 ) {
+                  $("#prev").addClass("nopaque");
+                  $("#next").removeClass("nopaque");
+              } 
+          };
+          if (pages > 1) {
+              divHeight(per);
+              cur_page = 1;
+          };
+      });
+      $(window).resize(function() {
+          divHeight(per);
+      });
+  </script>
+% else:
+  <div class="course-reviews">
+    <h2 class="review-header">Не оценивался</h2>
+  </div>
+% endif
+

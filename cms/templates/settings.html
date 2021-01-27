@@ -14,6 +14,7 @@
       dump_js_escaped_json, js_escaped_string
   )
   from openedx.core.djangolib.markup import HTML, Text
+  enable_extended_course_details = True
 %>
 
 <%block name="header_extras">
@@ -329,17 +330,17 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url | n, js_escaped_string}'
                   <span class="tip tip-stacked">${_("Displayed as title on the course details page. Limit to 50 characters.")}</span>
                 </li>
                 <li class="field text" id="field-course-subtitle">
-                  <label for="course-subtitle">${_("Course Subtitle")}</label>
+                  <label for="course-subtitle">${_("Course Result")}</label>
                   <input type="text" id="course-subtitle">
                   <span class="tip tip-stacked">${_("Displayed as subtitle on the course details page. Limit to 150 characters.")}</span>
                 </li>
                 <li class="field text" id="field-course-duration">
-                  <label for="course-duration">${_("Course Duration")}</label>
+                  <label for="course-duration">${_("SCOS general_uid")}</label>
                   <input type="text" id="course-duration">
                   <span class="tip tip-stacked">${_("Displayed on the course details page. Limit to 50 characters.")}</span>
                 </li>
                 <li class="field text" id="field-course-description">
-                  <label for="course-description">${_("Course Description")}</label>
+                  <label for="course-description">${_("Course competences")}</label>
                   <textarea class="text" id="course-description"></textarea>
                   <span class="tip tip-stacked">${_("Displayed on the course details page. Limit to 1000 characters.")}</span>
                 </li>
@@ -352,6 +353,7 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url | n, js_escaped_string}'
                   <span class="tip tip-stacked">${_("Appears on the course catalog page when students roll over the course name. Limit to ~150 characters")}</span>
                 </li>
                 % endif
+
 
                 % if about_page_editable:
                 <li class="field text" id="field-course-overview">
@@ -507,7 +509,7 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url | n, js_escaped_string}'
             <hr class="divide" />
             <div class="group-settings course-learning-info">
               <header>
-                <h2 class="title-2">${_("Learning Outcomes")}</h2>
+                <h2 class="title-2">${_("Directions")}</h2>
                 <span class="tip">${_("Add the learning outcomes for this course")}</span>
               </header>
               <ol class="list-input enum">
@@ -515,7 +517,7 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url | n, js_escaped_string}'
               </ol>
               <div class="actions">
                 <button type="button" class="action action-primary button new-button add-course-learning-info">
-                  <span class="icon fa fa-plus icon-inline" aria-hidden="true"></span>${_("Add Learning Outcome")}
+                  <span class="icon fa fa-plus icon-inline" aria-hidden="true"></span>${_("Add Directions")}
                 </button>
               </div>
             </div>

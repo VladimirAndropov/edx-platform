@@ -28,8 +28,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M"
 class Command(BaseCommand):
     """
     Example usage:
-        $ ./manage.py lms recalculate_subsection_grades
-            --modified_start '2016-08-23 16:43' --modified_end '2016-08-25 16:43' --settings=devstack
+        $ ./manage.py lms recalculate_subsection_grades --modified_start '2019-12-23 16:43' --modified_end '2021-01-01 16:43' --settings=aws
     """
     args = 'fill this in'
     help = 'Recalculates subsection grades for all subsections modified within the given time range.'
@@ -61,32 +60,42 @@ class Command(BaseCommand):
         event_transaction_id = create_new_event_transaction_id()
         set_event_transaction_type(PROBLEM_SUBMITTED_EVENT_TYPE)
         kwargs = {'modified__range': (modified_start, modified_end), 'module_type': 'problem'}
+        # for record in StudentModule.objects.filter(**kwargs):
+        #     task_args = {
+        #         "user_id": record.student_id,
+        #         "course_id": unicode(record.course_id),
+        #         "usage_id": unicode(record.module_state_key),
+        #         "only_if_higher": False,
+        #         "expected_modified_time": to_timestamp(record.modified),
+        #         "score_deleted": False,
+        #         "event_transaction_id": unicode(event_transaction_id),
+        #         "event_transaction_type": PROBLEM_SUBMITTED_EVENT_TYPE,
+        #         "score_db_table": ScoreDatabaseTableEnum.courseware_student_module,
+        #     }
+        #     recalculate_subsection_grade_v3.apply_async(kwargs=task_args)
+
+        kwargs = {'created_at__range': (modified_start, modified_end)}
+        # for record in Submission.objects.filter(**kwargs):
+        #     task_args = {
+        #         "user_id": user_by_anonymous_id(record.student_item.student_id).id,
+        #         "anonymous_user_id": record.student_item.student_id,
+        #         "course_id": unicode(record.student_item.course_id),
+        #         "usage_id": unicode(record.student_item.item_id),
+        #         "only_if_higher": False,
+        #         "expected_modified_time": to_timestamp(record.created_at),
+        #         "score_deleted": False,
+        #         "event_transaction_id": unicode(event_transaction_id),
+        #         "event_transaction_type": PROBLEM_SUBMITTED_EVENT_TYPE,
+        #         "score_db_table": ScoreDatabaseTableEnum.submissions,
+        #     }
+        #     recalculate_subsection_grade_v3.apply_async(kwargs=task_args)
+
         for record in StudentModule.objects.filter(**kwargs):
             task_args = {
                 "user_id": record.student_id,
                 "course_id": unicode(record.course_id),
-                "usage_id": unicode(record.module_state_key),
-                "only_if_higher": False,
                 "expected_modified_time": to_timestamp(record.modified),
-                "score_deleted": False,
                 "event_transaction_id": unicode(event_transaction_id),
                 "event_transaction_type": PROBLEM_SUBMITTED_EVENT_TYPE,
-                "score_db_table": ScoreDatabaseTableEnum.courseware_student_module,
             }
-            recalculate_subsection_grade_v3.apply_async(kwargs=task_args)
-
-        kwargs = {'created_at__range': (modified_start, modified_end)}
-        for record in Submission.objects.filter(**kwargs):
-            task_args = {
-                "user_id": user_by_anonymous_id(record.student_item.student_id).id,
-                "anonymous_user_id": record.student_item.student_id,
-                "course_id": unicode(record.student_item.course_id),
-                "usage_id": unicode(record.student_item.item_id),
-                "only_if_higher": False,
-                "expected_modified_time": to_timestamp(record.created_at),
-                "score_deleted": False,
-                "event_transaction_id": unicode(event_transaction_id),
-                "event_transaction_type": PROBLEM_SUBMITTED_EVENT_TYPE,
-                "score_db_table": ScoreDatabaseTableEnum.submissions,
-            }
-            recalculate_subsection_grade_v3.apply_async(kwargs=task_args)
+            recalculate_subsection_grade_v3_scos.apply_async(kwargs=task_args)

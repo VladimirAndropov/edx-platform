@@ -107,6 +107,19 @@ from xmodule.x_module import STUDENT_VIEW
 from ..entrance_exams import user_can_skip_entrance_exam
 from ..module_render import get_module, get_module_by_usage_id, get_module_for_descriptor
 
+import sys
+import os
+import io
+import json
+import exceptions
+import pdb
+from openedx.features.scos.conf import TESTING, DEBUG_OUTPUT_FILE \
+    ,ENV ,set_environment
+
+from openedx.features.scos.enrolls import *
+from openedx.features.scos.users import *
+from openedx.features.scos.courses import *
+from openedx.features.scos.portfolio import *
 log = logging.getLogger("edx.courseware")
 
 
@@ -920,7 +933,7 @@ def progress(request, course_id, student_id=None):
     with modulestore().bulk_operations(course_key):
         return _progress(request, course_key, student_id)
 
-
+  
 def _progress(request, course_key, student_id):
     """
     Unwrapped version of "progress".
@@ -930,6 +943,8 @@ def _progress(request, course_key, student_id):
     Course staff are allowed to see the progress of students in their class.
     """
 
+    msg = None   
+                                                
     if student_id is not None:
         try:
             student_id = int(student_id)
@@ -979,8 +994,37 @@ def _progress(request, course_key, student_id):
     studio_url = get_studio_url(course, 'settings/grading')
     # checking certificate generation configuration
     enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(student, course_key)
-
+    
+    if 'action' in request.GET:
+        if request.GET['action'] == 'rating':
+            if courseware_summary:
+                for chapter in courseware_summary:
+                    if not chapter['display_name'] == "hidden":
+                        for section in chapter['sections']:
+                            earned = section.all_total.earned
+                            total = section.all_total.possible
+                            if total > 0 or earned > 0 and section.percent_graded  > 0:
+                                rating = "{0:.2f}".format(100*section.percent_graded)                     
+                                checkpointId = section.url_name
+                                checkpointName = section.display_name
+                                timestamp = section.due
+                                progress = 100*course_grade.summary['percent']
+                                timestamp = timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')
+                                # msg = (unicode(course_key), unicode(student.id), unicode(timestamp), unicode(rating), unicode(progress), unicode(checkpointName), unicode(checkpointId))
+                                msg = post_result(unicode(course_key), student.id, timestamp, rating, progress, checkpointName, checkpointId)              
+                                #post_result(u'course-v1:fa+digitalmarket+2019_leto', u'35', u'2020-12-31T20:30:00+0000', u'56.00', u'56.0', u'\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0442\u0435\u0441\u0442', u'8f33d276091a41468af68237966db98a')
+                                    
+        elif request.GET['action'] == 'mark':
+            if course_grade.summary['grade']:                      
+                mark = course_grade.summary['grade']
+                msg = post_result_mark(unicode(course_key), student.id, unicode(mark))
+                
+        elif request.GET['action'] == 'scosid':
+            msg = get_user_scos_id(student.id)
+              
+                  
     context = {
+        'msg': msg,
         'course': course,
         'courseware_summary': courseware_summary,
         'studio_url': studio_url,
@@ -997,8 +1041,8 @@ def _progress(request, course_key, student_id):
             course,
             student,
         )
-    )
-
+    )    
+    
     with outer_atomic():
         response = render_to_response('courseware/progress.html', context)
 

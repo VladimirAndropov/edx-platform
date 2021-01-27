@@ -21630,6 +21630,82 @@ msgstr ""
 msgid "Tools"
 msgstr "Инструменты"
 
+#: cms/templates/settings.html
+msgid "Course Result"
+msgstr "Цели освоения курса"
+
+#: cms/templates/settings.html
+msgid "SCOS general_uid"
+msgstr "Идентификатор курса для обновления курса без заявки в СЦОС"
+
+#: cms/templates/settings.html
+msgid "Course competences"
+msgstr "Компетенции осваимаемые за курс"
+
+#: cms/templates/settings.html
+msgid "Directions"
+msgstr "Направление курса: 38.00.00"
+
+#: cms/templates/export_scos.html
+msgid "Export to SCOS"
+msgstr "Экспортировать данные в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "About Export to SCOS"
+msgstr "Описание процесса импорта данных в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Use this to export your course to its scos platform."
+msgstr "Данная страница позволяет создать json паспорт курса и экспортировать его в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "This will then trigger an automatic update of the main LMS site and update the contents of your course visible there to students if automatic  imports are configured."
+msgstr "Используйте кнопки, чтобы создать либо обновить паспорт курса и экспортировать его в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Export Course to SCOS:"
+msgstr "Экспортировать курс в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Add New course"
+msgstr "Создать новый курс на основе данных из Студии"
+
+#: cms/templates/export_scos.html
+msgid "there"
+msgstr " по ссылке"
+
+#: cms/templates/export_scos.html
+msgid "Please do not forget create ticket"
+msgstr "Перед тем как нажать на кнопку Создать новый курс должна быть создана заявка на новый курс в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Please do not forget add SCOS_general_uid"
+msgstr "Здесь заявка в СЦОС не нужна. Мы обновляем имеющийся в СЦОС курс. Перед тем как нажать на кнопку Создать новый курс на основе старого курса с новыми данными, не забудьте вписать новый идентификатор курса "
+
+#: cms/templates/export_scos.html
+msgid "Update in SCOS"
+msgstr "Обновить данные в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Activate this course in SCOS"
+msgstr "Сменить статус курса на Активный в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Archive this course in SCOS"
+msgstr "Сменить статус курса на Скрытый архивный в СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Update New course"
+msgstr "Создать новый курс на основе старого курса с новыми данными без заявки в СЦОС"
+
+#: cms/templates/export_scos.html
+msgid "SCOS url:"
+msgstr "Текущий контур СЦОС РФ"
+
+#: cms/templates/export_scos.html
+msgid "Status of this course:"
+msgstr "Флаг нового курса"
+
 #: cms/templates/component.html cms/templates/studio_xblock_wrapper.html
 msgid "Duplicate"
 msgstr "Копировать"
@@ -24339,7 +24415,7 @@ msgstr "Ожидания слушателей этого курса"
 
 #: cms/templates/settings.html
 msgid "Hours of Effort per Week"
-msgstr "Еженедельная нагрузка в часах"
+msgstr "Нагрузка в часах Перевод в недели х//54"
 
 #: cms/templates/settings.html
 msgid "Time spent on all course work"

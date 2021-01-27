@@ -3,6 +3,7 @@
 <%namespace name='static' file='/static_content.html'/>
 <%def name="online_help_token()"><% return "progress" %></%def>
 <%!
+import json
 from course_modes.models import CourseMode
 from lms.djangoapps.certificates.models import CertificateStatuses
 from django.utils.translation import ugettext as _
@@ -11,7 +12,6 @@ from django.urls import reverse
 from django.conf import settings
 from django.utils.http import urlquote_plus
 from six import text_type
-
 from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name
 %>
 
@@ -26,6 +26,9 @@ username = get_enterprise_learner_generic_name(request) or student.username
 <%static:css group='style-course'/>
 </%block>
 
+<%
+scos_data = {}
+%>
 
 <%namespace name="progress_graph" file="/courseware/progress_graph.js"/>
 
@@ -154,6 +157,25 @@ username = get_enterprise_learner_generic_name(request) or student.username
                     </div>
                 </section>
                 %endif
+ 
+                <div class="form-actions">
+                    <a class="btn btn-primary action-resume-course"
+                        href="${reverse('progress', kwargs=dict(course_id=unicode(course.id)))}?action=scosid">
+                        <span data-action-type="start">${_("View my scos_id")}</span>
+                    </a>
+                    <a class="btn btn-primary action-resume-course"
+                        href="${reverse('progress', kwargs=dict(course_id=unicode(course.id)))}?action=rating">
+                        <span data-action-type="start">${_("Export rating to SCOS")}</span>
+                    </a>
+                    <a class="btn btn-primary action-resume-course"
+                        href="${reverse('progress', kwargs=dict(course_id=unicode(course.id)))}?action=mark">
+                        <span data-action-type="start">${_("Export mark to SCOS")}</span>
+                    </a>
+                
+                </div>
+                %if msg:
+                <h1>${msg}</h1>
+                %endif  
 
                 %if courseware_summary:
                 <section class="chapters">
@@ -168,14 +190,15 @@ username = get_enterprise_learner_generic_name(request) or student.username
                                         <%
                                         earned = section.all_total.earned
                                         total = section.all_total.possible
-
-                                        percentageString = "{0:.0%}".format(section.percent_graded) if earned > 0 and total > 0 else ""
+                                        
+                                        percentageString = "{0:.0%}".format(section.percent_graded) if earned > 0 and total > 0 else ""                                        
                                         %>
                                         <h4 class="hd hd-4">
                                             <a href="${reverse('courseware_section', kwargs=dict(course_id=text_type(course.id), chapter=chapter['url_name'], section=section.url_name))}">
                                                 ${ section.display_name}
                                                 %if total > 0 or earned > 0:
                                                 <span class="sr">
+                                                    <h1>${earned}</h1>
                                                     ${_("{earned} of {total} possible points").format(earned='{:.3n}'.format(float(earned)), total='{:.3n}'.format(float(total)))}
                                                 </span>
                                                 %endif
@@ -238,7 +261,12 @@ username = get_enterprise_learner_generic_name(request) or student.username
                 </section>
                 %endif
             </section>
+
+                             
         </div>
+        <tr>
+
+          </tr>
     </div>
 </main>
 <%static:require_module_async module_name="js/dateutil_factory" class_name="DateUtilFactory">

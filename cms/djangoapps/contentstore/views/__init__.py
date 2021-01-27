@@ -17,6 +17,7 @@ from .library import *
 from .preview import *
 from .public import *
 from .export_git import *
+from .export_scos import *
 from .user import *
 from .tabs import *
 from .videos import *

@@ -30,6 +30,7 @@ from ..scores import weighted_score
 from ..tasks import (
     RECALCULATE_GRADE_DELAY_SECONDS,
     recalculate_subsection_grade_v3,
+    recalculate_subsection_grade_v3_scos,
     recalculate_course_and_subsection_grades_for_user
 )
 
@@ -229,6 +230,24 @@ def enqueue_subsection_update(sender, **kwargs):  # pylint: disable=unused-argum
         countdown=RECALCULATE_GRADE_DELAY_SECONDS,
     )
 
+@receiver(PROBLEM_WEIGHTED_SCORE_CHANGED)
+@receiver(SUBSECTION_OVERRIDE_CHANGED)
+def enqueue_subsection_update_scos(sender, **kwargs):  # pylint: disable=unused-argument
+    recalculate_subsection_grade_v3_scos.apply_async(
+        kwargs=dict(
+            user_id=kwargs['user_id'],
+            anonymous_user_id=kwargs.get('anonymous_user_id'),
+            course_id=kwargs['course_id'],
+            usage_id=kwargs['usage_id'],
+            only_if_higher=kwargs.get('only_if_higher'),
+            expected_modified_time=to_timestamp(kwargs['modified']),
+            score_deleted=kwargs.get('score_deleted', False),
+            event_transaction_id=unicode(get_event_transaction_id()),
+            event_transaction_type=unicode(get_event_transaction_type()),
+            score_db_table=kwargs['score_db_table'],
+        ),
+        countdown=RECALCULATE_GRADE_DELAY_SECONDS,
+    )
 
 @receiver(SUBSECTION_SCORE_CHANGED)
 def recalculate_course_grade_only(sender, course, course_structure, user, **kwargs):  # pylint: disable=unused-argument

@@ -90,7 +90,8 @@ HIGH_MEM_QUEUE = 'edx.{0}core.high_mem'.format(QUEUE_VARIANT)
 
 CELERY_DEFAULT_QUEUE = DEFAULT_PRIORITY_QUEUE
 CELERY_DEFAULT_ROUTING_KEY = DEFAULT_PRIORITY_QUEUE
-
+CELERY_SEND_TASK_ERROR_EMAILS = True
+ADMINS = ( ('localboss', 'vvandropov@fa.ru'), )
 CELERY_QUEUES = {
     HIGH_PRIORITY_QUEUE: {},
     LOW_PRIORITY_QUEUE: {},
@@ -99,7 +100,19 @@ CELERY_QUEUES = {
 }
 
 CELERY_ROUTES = "{}celery.Router".format(QUEUE_VARIANT)
-CELERYBEAT_SCHEDULE = {}  # For scheduling tasks, entries can be added to this dict
+
+CELERYBEAT_SCHEDULER="djcelery.schedulers.DatabaseScheduler"
+
+CELERYBEAT_SCHEDULE = {
+    "runs-every-3000-seconds": {
+        "task": "lms.djangoapps.grades.tasks.recalculate_subsection_grade_v3_scos",
+        "schedule": datetime.timedelta(seconds=3000),
+        "kwargs": {
+                        "user_id": 930,
+                        "course_key": 'course-v1:fa+digitalmarket+2019_leto'
+                    }
+    },
+}
 
 ########################## NON-SECURE ENV CONFIG ##############################
 # Things like server locations, ports, etc.
@@ -726,6 +739,27 @@ if FEATURES.get('ENABLE_OAUTH2_PROVIDER'):
 
 ##### ADVANCED_SECURITY_CONFIG #####
 ADVANCED_SECURITY_CONFIG = ENV_TOKENS.get('ADVANCED_SECURITY_CONFIG', {})
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.open_id.OpenIdAuth',
+    'social_core.backends.google.GoogleOpenId',
+    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.linkedin.LinkedinOAuth2',
+    'social_core.backends.google.GoogleOAuth',
+    'social_core.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+    'third_party_auth.saml.SAMLAuthBackend',
+    'third_party_auth.lti.LTIAuthBackend',
+    'openedx.features.scos.auth.ScosOidcAuth',
+    'social_core.backends.vk.VKOAuth2',	
+)
+
+SOCIAL_AUTH_FACEBOOK_KEY = '2171994453113757'
+SOCIAL_AUTH_FACEBOOK_SECRET = '3f8cf40bbd96dc3c3ab092106ad7e711'
+SOCIAL_AUTH_VK_OAUTH2_KEY = '6908567'
+SOCIAL_AUTH_VK_OAUTH2_SECRET = 'w4XCin6nTG31Q4Md3s4H'
+SOCIAL_AUTH_SCOS_KEY = 'onlineacademy'
+SOCIAL_AUTH_SCOS_SECRET = '5a04d64a-246d-4468-8929-57f439aa6fa9'
 
 ##### GOOGLE ANALYTICS IDS #####
 GOOGLE_ANALYTICS_ACCOUNT = AUTH_TOKENS.get('GOOGLE_ANALYTICS_ACCOUNT')

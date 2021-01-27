@@ -1998,6 +1998,13 @@ BULK_EMAIL_RETRY_DELAY_BETWEEN_SENDS = 0.02
 # Minimum age for organization-wide email opt in
 EMAIL_OPTIN_MINIMUM_AGE = PARENTAL_CONSENT_AGE_LIMIT
 
+
+# Queue to use for updating persistent grades
+RECALCULATE_GRADES_ROUTING_KEY = DEFAULT_PRIORITY_QUEUE
+
+# Queue to use for updating grades due to grading policy change
+POLICY_CHANGE_GRADES_ROUTING_KEY = DEFAULT_PRIORITY_QUEUE
+
 ############################## Video ##########################################
 
 YOUTUBE = {
@@ -2316,6 +2323,9 @@ INSTALLED_APPS = [
 
     # API Documentation
     'rest_framework_swagger',
+
+    # SCOS
+    'openedx.features.scos',
 ]
 
 ######################### CSRF #########################################

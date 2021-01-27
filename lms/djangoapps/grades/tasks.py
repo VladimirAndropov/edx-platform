@@ -6,6 +6,8 @@ from logging import getLogger
 
 import six
 from celery import task
+# from celery.task import periodic_task
+# from celery.schedules import crontab
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask
 from courseware.model_data import get_score
 from django.conf import settings
@@ -25,6 +27,7 @@ from xmodule.modulestore.django import modulestore
 
 from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE, waffle
 from .constants import ScoreDatabaseTableEnum
+from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from .course_grade_factory import CourseGradeFactory
 from .exceptions import DatabaseNotReadyError
 from .services import GradesService
@@ -32,6 +35,14 @@ from .signals.signals import SUBSECTION_SCORE_CHANGED
 from .subsection_grade_factory import SubsectionGradeFactory
 from .transformer import GradesTransformer
 
+from openedx.features.scos.conf import TESTING, DEBUG_OUTPUT_FILE \
+    ,ENV ,set_environment
+from openedx.features.scos.enrolls import *
+from openedx.features.scos.users import *
+from openedx.features.scos.courses import *
+from openedx.features.scos.portfolio import *
+from pytz import UTC
+from datetime import datetime
 log = getLogger(__name__)
 
 COURSE_GRADE_TIMEOUT_SECONDS = 1200
@@ -106,13 +117,14 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
     The set of students will be determined by the order of enrollment date, and
     limited to at most <batch_size> students, starting from the specified
     offset.
-    """
+    """    
     course_key = CourseKey.from_string(course_key)
     enrollments = CourseEnrollment.objects.filter(course_id=course_key).order_by('created')
     student_iter = (enrollment.user for enrollment in enrollments[offset:offset + batch_size])
-    for result in CourseGradeFactory().iter(users=student_iter, course_key=course_key, force_update=True):
+    for result in CourseGradeFactory().iter(users=student_iter, course_key=course_key, force_update=True):   
         if result.error is not None:
-            raise result.error
+            raise result.error    
+    
 
 
 @task(
@@ -130,6 +142,8 @@ def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint
     """
     user_id = kwargs.get('user_id')
     course_key_str = kwargs.get('course_key')
+    # user_id = 11
+    # course_key_str = 'course-v1:fa+digitalmarket+2019_leto'
 
     if not (user_id or course_key_str):
         message = 'recalculate_course_and_subsection_grades_for_user missing "user" or "course_key" kwargs from {}'
@@ -139,12 +153,35 @@ def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint
     course_key = CourseKey.from_string(course_key_str)
 
     previous_course_grade = CourseGradeFactory().read(user, course_key=course_key)
+             
     if previous_course_grade and previous_course_grade.attempted:
         CourseGradeFactory().update(
             user=user,
             course_key=course_key,
-            force_update_subsections=True
-        )
+            force_update_subsections=True)
+        
+    if check_scos_enrollment(unicode(course_key), user_id) == u'PARTICIPATION_NOT_FOUND':
+        enroll_scos_user(unicode(course_key), user_id)  
+  
+    # course_grade = CourseGradeFactory().read(user, course_key=course_key)
+    # courseware_summary = course_grade.chapter_grades.values()
+
+    # if courseware_summary:
+    #     for chapter in courseware_summary:
+    #         if not chapter['display_name'] == "hidden":
+    #             for section in chapter['sections']:
+    #                 earned = section.all_total.earned
+    #                 total = section.all_total.possible
+    #                 if total > 0 or earned > 0 and section.percent_graded  > 0:
+    #                     rating = "{0:.2f}".format(100*section.percent_graded)                     
+    #                     checkpointId = section.url_name
+    #                     checkpointName = section.display_name
+    #                     progress = 100*course_grade.summary['percent']
+    #                     timestamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%S%z')
+    #                     msg = post_result(unicode(course_key), user_id, timestamp, rating, progress, checkpointName, checkpointId)
+    #                     log.info(msg)  
+
+       
 
 
 @task(
@@ -217,6 +254,7 @@ def _recalculate_subsection_grade(self, **kwargs):
             kwargs['user_id'],
             kwargs['score_deleted'],
         )
+        # _update_subsection_grades_scos(course_key, kwargs['user_id'])
     except Exception as exc:
         if not isinstance(exc, KNOWN_RETRY_ERRORS):
             log.info("tnl-6244 grades unexpected failure: {}. task id: {}. kwargs={}".format(
@@ -227,6 +265,38 @@ def _recalculate_subsection_grade(self, **kwargs):
         raise self.retry(kwargs=kwargs, exc=exc)
 
 
+@task(
+    bind=True,
+    base=LoggedPersistOnFailureTask,
+    time_limit=1800,
+    max_retries=2,
+    default_retry_delay=9000,
+    routing_key=settings.RECALCULATE_GRADES_ROUTING_KEY
+)
+def recalculate_subsection_grade_v3_scos(self, **kwargs):
+
+    try:
+        course_key = CourseLocator.from_string(kwargs['course_id'])
+
+        set_custom_metrics_for_course_key(course_key)
+
+        set_event_transaction_id(kwargs.get('event_transaction_id'))
+        set_event_transaction_type(kwargs.get('event_transaction_type'))
+
+        _update_subsection_grades_scos(
+            course_key,
+            kwargs['user_id'],
+        )
+    except Exception as exc:
+        if not isinstance(exc, KNOWN_RETRY_ERRORS):
+            log.info("tnl-6244 grades unexpected failure: {}. task id: {}. kwargs={}".format(
+                repr(exc),
+                self.request.id,
+                kwargs,
+            ))
+        raise self.retry(kwargs=kwargs, exc=exc)
+    
+    
 def _has_db_updated_with_new_score(self, scored_block_usage_key, **kwargs):
     """
     Returns whether the database has been updated with the
@@ -311,6 +381,30 @@ def _update_subsection_grades(course_key, scored_block_usage_key, only_if_higher
                 )
 
 
+def _update_subsection_grades_scos(course_key, user_id):
+
+    user = User.objects.get(id=user_id)
+    # course_key = CourseKey.from_string(course_key_str)
+    course_grade = CourseGradeFactory().read(user, course_key=course_key)
+    courseware_summary = course_grade.chapter_grades.values()
+    if courseware_summary:
+        for chapter in courseware_summary:
+            if not chapter['display_name'] == "hidden":
+                for section in chapter['sections']:
+                    earned = section.all_total.earned
+                    total = section.all_total.possible
+                    if total > 0 or earned > 0 and section.percent_graded  > 0:
+                        rating = "{0:.2f}".format(100*section.percent_graded)                     
+                        checkpointId = section.url_name
+                        checkpointName = section.display_name
+                        progress = 100*course_grade.summary['percent']
+                        timestamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%S%z')
+                        msg = post_result(unicode(course_key), user_id, timestamp, rating, progress, checkpointName, checkpointId)
+                        log.info(msg)
+                        
+
+                
+                
 def _course_task_args(course_key, **kwargs):
     """
     Helper function to generate course-grade task args.
@@ -327,3 +421,5 @@ def _course_task_args(course_key, **kwargs):
 
     for offset in six.moves.range(0, enrollment_count, batch_size):
         yield (six.text_type(course_key), offset, batch_size)
+
+
