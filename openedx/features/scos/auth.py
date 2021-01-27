@@ -22,7 +22,7 @@ from social_core.exceptions import AuthFailed, AuthCanceled, \
                   AuthStateMissing, AuthStateForbidden, AuthTokenError
 
 from users import add_scos_user
-
+from openedx.features.scos.conf import ENV
 
 
 
